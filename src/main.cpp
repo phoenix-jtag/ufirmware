@@ -5,6 +5,8 @@
 
 
 void setup() {
+  eeprom_manager eeprom;
+  epages_manager epages;
 }
 
 
