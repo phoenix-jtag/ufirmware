@@ -1,14 +1,16 @@
 #pragma once
 
+//#define DEBUG 1
+
 #define TOUCH_PIN T0 
-#define THRESHOLD 56
+#define THRESHOLD 54
 
-#define TOUCH_THRESHOLD  150   // debounce time in milliseconds 50-200
-#define TIMEOUT          500    // 350ms to register next click to separate clicks
+#define TOUCH_THRESHOLD  150     // touch registered after 150ms (50 - 200 ms)
+#define TIMEOUT          500     // start processing after 500ms
 
-#define PRESS_THRESHOLD   1500   // 3s to register long press
-#define HOLD_THRESHOLD    5000   // 1s to register hold
-#define RESET_THRESHOLD   10000  // 10s to reset to default config
+#define PRESS_THRESHOLD   1000   // press registered after 1.5s
+#define HOLD_THRESHOLD    5000   // hold registered after 5s
+#define RESET_THRESHOLD   10000  // reset registered after 10s
 
 
 enum class touch_state {
@@ -17,6 +19,7 @@ enum class touch_state {
     TOUCH1,
     TOUCH2,
     TOUCH3,
+    DETECT,
     PRESS,
     HOLD,
     RESET,
@@ -30,7 +33,6 @@ private:
     static volatile unsigned long touch_start_time;
     static volatile unsigned long last_touch_time;
     static volatile unsigned long last_interrupt_time;
-
 
     static void touch_isr();
 
