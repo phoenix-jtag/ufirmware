@@ -1,21 +1,60 @@
-#include "presets.h"
+#include "matrix_interface.h"
 
 CRGB leds[NUM_LEDS];
 
-void init()
-{
-    // tell FastLED about the LED strip configuration
-    FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
-        .setCorrection(TypicalLEDStrip)
-        .setDither(BRIGHTNESS < 255);
+matrix_interface::matrix_interface() {
+
+  // LOAD CONFIG STRUCT from EEPROM_CONFIG 
+
+  // if CUSTOM CONFIG is VALID set CUSTOM, else set DEFAULT
+
+  // tell FastLED about the LED strip configuration
+  FastLED
+      .addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
+      .setCorrection(TypicalLEDStrip)
+      .setDither(BRIGHTNESS < 255);
     
     // set master brightness control
-    FastLED.setBrightness(BRIGHTNESS);
+  FastLED.setBrightness(BRIGHTNESS);
+
+  state = matrix_state::BLACK;
+}
+
+matrix_interface::~matrix_interface() {
+  // SAVE CONFIG STRUCT to EEPROM_CONFIG
+}
+
+
+
+void matrix_interface::set_state(matrix_state state) {
+  this->state = state;
+}
+
+matrix_state matrix_interface::get_state() {
+  return state;
+}
+
+
+
+void matrix_interface::display(matrix_state state) {
+  switch (state) {
+    case matrix_state::BLACK: black(); break;
+    case matrix_state::PRIDE: pride(); break;
+    default: break;
+  }
+}
+
+
+
+void matrix_interface::black()
+{
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  FastLED.show();
 }
 
 // This function draws rainbows with an ever-changing,
 // widely-varying set of parameters.
-void pride() 
+void matrix_interface::pride() 
 {
   static uint16_t sPseudotime = 0;
   static uint16_t sLastMillis = 0;
@@ -54,4 +93,5 @@ void pride()
     
     nblend( leds[pixelnumber], newcolor, 64);
   }
+  FastLED.show();
 }

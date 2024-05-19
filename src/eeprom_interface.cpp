@@ -14,6 +14,7 @@ eeprom_interface::eeprom_interface() {
         save(); // <- save config to eeprom
     }
     // now we have valid config: custom or default 
+    Serial.println("> device_id: " + String(config.device_id));
 };
 
 eeprom_interface::~eeprom_interface() {

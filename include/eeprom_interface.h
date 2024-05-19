@@ -9,16 +9,22 @@
 #define DEFAULT_MODE 0
 #define INITED       1
 
+enum class eeprom_state {
+    NO_INITED,
+    IS_INITED
+};
+
+// eeprom config partition 
+struct eeprom_config {
+    bool      state;      // <- 0 - not inited, 1 - inited
+    char      device_id[64];      // <- device id
+    uint8_t   preset_id;      // <- number of preset
+}; 
+
 class eeprom_interface {
 public:
-    // eeprom config partition 
-    struct Config {
-        bool                state;      // <- 0 - not inited, 1 - inited
-        char  device_id[64];      // <- device id
-        uint8_t         preset_id;      // <- number of preset
-    }; 
-    
-    Config config;
+    eeprom_state state;
+    eeprom_config config;
 
     // eeprom memory ctor and dtor
     eeprom_interface();           // <- init memory, load default or custom config
