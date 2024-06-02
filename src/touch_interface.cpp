@@ -1,41 +1,62 @@
 #include <Arduino.h>
 #include "touch_interface.h"
 
-int touch_interface::touch_count = 0;
-volatile unsigned long touch_interface::touch_start_time = 0;
-volatile unsigned long touch_interface::last_touch_time = 0;
-volatile unsigned long touch_interface::last_interrupt_time = 0;
 
-void touch_interface::touch_isr() {
-    unsigned long interrupt_time = millis(); // get current time
 
-    #ifdef DEBUG
-    Serial.println("> debug: touch_isr - " + String(touchRead(TOUCH_PIN)));
-    #endif
+touch_state touch_interface::state;
 
-    // If interrupts come faster than TOUCH_TIME, assume it's a bounce and ignore
-    if (interrupt_time - last_interrupt_time > TOUCH_THRESHOLD) {
-      last_interrupt_time = interrupt_time; // update last interrupt time
-      touch_count++;
-      last_touch_time = interrupt_time;
-    }
+uint8_t  touch_threshold;
+uint8_t  debounce_time;
+bool     touch_active;
+bool     last_touch_active;
+bool testing_lower;
+byte button_state;
 
-    if (touch_count == 1) { // if this is the first touch
-      touch_start_time = millis(); // record the start time
-    }
+
+
+void touch_interface::got_touch_event(){
+
+  if (last_touch_active != testing_lower) {
+
+    touch_active = !touch_active;
+    testing_lower = !testing_lower;
+    // Touch ISR will be inverted: Lower <--> Higher than the Threshold after ISR event is noticed
+    touchInterruptSetThresholdDirection(testing_lower);
+  }
 }
 
 
+
+byte touch_interface::cap_state_handler() {
+    return button_state;
+}
+
+
+
 touch_interface::touch_interface() {
-  touch_count = 0;
 
-  touch_start_time = 0;
-  last_touch_time = 0;
-  last_interrupt_time = 0;
+  touch_threshold    = TOUCH_THRESHOLD;   
+  debounce_time      = DEBOUNCE_TIME; 
+  touch_active       = false;
+  last_touch_active  = false;
+  testing_lower      = true; 
+  button_state       = HIGH;
 
-  state = touch_state::IDLE;
+  touchAttachInterrupt(TOUCH_PIN, got_touch_event, touch_threshold);
 
-  touchAttachInterrupt(TOUCH_PIN, touch_isr, THRESHOLD);
+  // Touch ISR will be activated when touchRead is lower than the Threshold
+  touchInterruptSetThresholdDirection(testing_lower);
+
+    button.setDebounceTime(debounce_time);
+
+    button.setButtonStateFunction(cap_state_handler); // Fixed method name
+    button.setClickHandler(touch1_handler);
+    button.setDoubleClickHandler(touch2_handler);
+    button.setTripleClickHandler(touch3_handler);
+
+    button.setLongClickHandler(press_handler);
+
+    button.begin(BTN_VIRTUAL_PIN);
 }
 
 touch_interface::~touch_interface() {
@@ -43,52 +64,26 @@ touch_interface::~touch_interface() {
 }
 
 
+
 touch_state touch_interface::get_state() {
 
+  #ifdef DEBUG
+    Serial.println("Capacity: " + String(touchRead(TOUCH_PIN)));
+  #endif
+
   state = touch_state::IDLE;
-  //Serial.println("> touch_count: " + String(touch_count));
 
-  if (touch_count > 0 && millis() - last_touch_time > TIMEOUT) {
-    unsigned long touch_duration = millis() - touch_start_time;
+  button.loop();
 
-    if (touch_duration > RESET_THRESHOLD) { 
+  if(last_touch_active != touch_active){
 
-      Serial.println("> reset");
-      state = touch_state::RESET;
+    last_touch_active = touch_active;
 
-    } else if (touch_duration > HOLD_THRESHOLD) { 
-
-      Serial.println("> hold");
-      state = touch_state::HOLD;
-
-    } else if (touch_duration > PRESS_THRESHOLD) {
-
-      Serial.println("> press");
-      state = touch_state::PRESS;
-
-    } else if (touch_duration <= PRESS_THRESHOLD) { 
-
-    switch (touch_count) {
-      case 1:
-            Serial.println("> 1x click");
-            state = touch_state::TOUCH1;
-            break;
-      case 2:
-            Serial.println("> 2x click");
-            state = touch_state::TOUCH2;
-            break;
-      case 3:
-            Serial.println("> 3x click");
-            state = touch_state::TOUCH3;
-            break;
-      default:
-            Serial.println("> undef");
-            state = touch_state::UNDEF;
-            break;
-      }
+    if (touch_active) {
+      button_state = LOW;
+    } else {
+      button_state = HIGH;
     }
-      touch_count = 0;
-      touch_start_time = millis(); // reset touch start time
   }
   
   return state;

@@ -1,40 +1,60 @@
 #pragma once
+#include <Button2.h>
 
-//#define DEBUG 1
+// #define DEBUG 1
 
 #define TOUCH_PIN T0 
-#define THRESHOLD 54
-
-#define TOUCH_THRESHOLD  150     // touch registered after 150ms (50 - 200 ms)
-#define TIMEOUT          500     // start processing after 500ms
-
-#define PRESS_THRESHOLD   1000   // press registered after 1.5s
-#define HOLD_THRESHOLD    5000   // hold registered after 5s
-#define RESET_THRESHOLD   10000  // reset registered after 10s
+#define TOUCH_THRESHOLD 70
+#define DEBOUNCE_TIME   65
 
 
 enum class touch_state {
-    UNDEF,
+
     IDLE,
     TOUCH1,
     TOUCH2,
     TOUCH3,
-    DETECT,
     PRESS,
     HOLD,
     RESET,
 };
 
+
 class touch_interface {
+
 private:
-    touch_state state;
 
-    static int touch_count;
-    static volatile unsigned long touch_start_time;
-    static volatile unsigned long last_touch_time;
-    static volatile unsigned long last_interrupt_time;
+    static touch_state state;
 
-    static void touch_isr();
+    Button2 button;
+
+    static void got_touch_event();
+    static byte cap_state_handler();
+
+    static void touch1_handler(Button2 &btn) {
+        Serial.println("> 1 touch");
+        state = touch_state::TOUCH1;
+    }
+
+    static void touch2_handler(Button2 &btn) {
+        Serial.println("> 2 touch");
+        state = touch_state::TOUCH2;
+    }
+
+    static void touch3_handler(Button2 &btn) {
+        Serial.println("> 3 touch");
+        state = touch_state::TOUCH3;
+    }
+
+    static void press_handler(Button2 &btn) {
+        Serial.println("> press");
+        state = touch_state::PRESS;
+    }
+
+    static void hold_handler(Button2 &btn) {
+        Serial.println("> hold");
+        state = touch_state::HOLD;
+    }
 
 public:
     

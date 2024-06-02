@@ -1,5 +1,7 @@
 #include "eeprom_interface.h"
 
+
+
 // <- init memory, load default or custom config
 eeprom_interface::eeprom_interface() {
 
@@ -17,17 +19,23 @@ eeprom_interface::eeprom_interface() {
     Serial.println("> device_id: " + String(config.device_id));
 };
 
+
+
 eeprom_interface::~eeprom_interface() {
 
     save(); // <- save config to eeprom
     EEPROM.end(); 
 }
 
+
+
 bool eeprom_interface::load() {
 
     EEPROM.get(EEPROM_ADDR, config);
     return (config.state == INITED) ? true : false;
 }
+
+
 
 bool eeprom_interface::save() {
 
@@ -38,6 +46,8 @@ bool eeprom_interface::save() {
     EEPROM.put(EEPROM_ADDR, config);
     return EEPROM.commit();
 }
+
+
 
 bool eeprom_interface::erase() {
 
