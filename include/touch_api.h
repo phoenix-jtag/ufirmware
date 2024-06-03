@@ -1,5 +1,7 @@
 #pragma once
+#include <Arduino.h>
 #include <Button2.h>
+#include "eeprom_api.h"
 
 // #define DEBUG 1
 
@@ -22,6 +24,9 @@ enum class touch_states {
 
 struct touch_config {
 
+    uint8_t 
+    uint8_t touch_threshold;
+    uint8_t debounce_time;
 };
 
 
@@ -30,37 +35,39 @@ class touch_api {
 
 private:
 
-    static touch_states  state;
-    static touch_config config;
+    static touch_states touch_state;
+    static touch_config touch_conf;
 
     Button2 button;
+
+    eeprom_api& eeprom = eeprom_api::getInstance();
 
     static void got_touch_event();
     static byte cap_state_handler();
 
     static void touch1_handler(Button2 &btn) {
         Serial.println("> 1 touch");
-        state = touch_states::TOUCH1;
+        touch_state = touch_states::TOUCH1;
     }
 
     static void touch2_handler(Button2 &btn) {
         Serial.println("> 2 touch");
-        state = touch_states::TOUCH2;
+        touch_state = touch_states::TOUCH2;
     }
 
     static void touch3_handler(Button2 &btn) {
         Serial.println("> 3 touch");
-        state = touch_states::TOUCH3;
+        touch_state = touch_states::TOUCH3;
     }
 
     static void press_handler(Button2 &btn) {
         Serial.println("> press");
-        state = touch_states::PRESS;
+        touch_state = touch_states::PRESS;
     }
 
     static void hold_handler(Button2 &btn) {
         Serial.println("> hold");
-        state = touch_states::HOLD;
+        touch_state = touch_states::HOLD;
     }
 
 public:

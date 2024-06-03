@@ -44,6 +44,12 @@ struct eeprom_config {
 class eeprom_api {
 
 public:
+    // singleton pattern
+    static eeprom_api& getInstance() {
+        static eeprom_api instance; // Guaranteed to be destroyed.
+                                    // Instantiated on first use.
+        return instance;
+    }
 
     eeprom_states eeprom_state;
     eeprom_config eeprom_conf;
@@ -57,5 +63,14 @@ public:
     bool get_page(pages_list page, size_t size, void* data); // <- EEPROM ---> RAM
     
     bool clr_page(pages_list page);                          // <- ERASE PAGE
-    bool clr_eeprom();                                       // <- ERASE ALL EEPROM
+    bool clr_eeprom();  
+    
+
+    // Singleton pattern
+private: 
+    eeprom_api(){}
+    
+public:
+    eeprom_api(eeprom_api const&) = delete;
+    void operator=(eeprom_api const&) = delete;
 };

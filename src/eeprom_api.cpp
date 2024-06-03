@@ -108,7 +108,7 @@ bool eeprom_api::get_page(pages_list page, size_t size, void* data) {
 
 
 
-bool eeprom_api::erase_page(pages_list page) {
+bool eeprom_api::clr_page(pages_list page) {
 
     if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
 
@@ -121,7 +121,7 @@ bool eeprom_api::erase_page(pages_list page) {
 
 
 
-bool eeprom_api::erase_full() {
+bool eeprom_api::clr_eeprom() {
 
     for (int i = 0; i < EEPROM_SIZE; i++) { EEPROM.put(i, '\0'); }
 
