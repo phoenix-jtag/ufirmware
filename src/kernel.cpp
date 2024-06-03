@@ -1,27 +1,32 @@
-#include "task_manager.h"
+#include "kernel.h"
 
 
-task_manager::task_manager() {
-    touch_queue = xQueueCreate(10, sizeof(touch_state));
+kernel::kernel() {
+
+  kernel_state = kernel_states::NO_INITED;
+
+    touch_queue = xQueueCreate(10, sizeof(touch_states));
 }
 
 
-task_manager::~task_manager() {
+kernel::~kernel() {
     vQueueDelete(touch_queue);
 }
 
 
 
-void task_manager::start_tasks() {
-    xTaskCreate((TaskFunction_t)&task_manager::uart_task, "uart_task", 4096, NULL, 1, NULL);
-    xTaskCreate((TaskFunction_t)&task_manager::touch_task, "touch_task", 4096, NULL, 1, NULL);
-    xTaskCreate((TaskFunction_t)&task_manager::matrix_task, "matrix_task", 4096, NULL, 1, NULL);
+
+
+void kernel::tasks_start() {
+    xTaskCreate((TaskFunction_t)&kernel::uart_task, "uart_task", 4096, NULL, 1, NULL);
+    xTaskCreate((TaskFunction_t)&kernel::touch_task, "touch_task", 4096, NULL, 1, NULL);
+    xTaskCreate((TaskFunction_t)&kernel::matrix_task, "matrix_task", 4096, NULL, 1, NULL);
 }
 
 
 
 
-void task_manager::uart_task(void *pvParameters) {
+void kernel::uart_task(void *pvParameters) {
 
   String command = "";
 
@@ -43,7 +48,7 @@ void task_manager::uart_task(void *pvParameters) {
 
 
 
-void task_manager::touch_task(void *pvParameters) {
+void kernel::touch_task(void *pvParameters) {
 
   for (;;) { // <- main loop
 
@@ -60,7 +65,7 @@ void task_manager::touch_task(void *pvParameters) {
 
 
 
-void task_manager::matrix_task(void *pvParameters) {
+void kernel::matrix_task(void *pvParameters) {
 
   for (;;) { // <- main loop
 
@@ -71,27 +76,27 @@ void task_manager::matrix_task(void *pvParameters) {
       // and they will define the state of the matrix
       switch (state) { 
 
-        case touch_state::TOUCH1:
+        case touch_states::TOUCH1:
           if (power_state) { // only
-            matrix.set_state(static_cast<matrix_state>(stat_index++));
+            matrix.set_state(static_cast<matrix_states>(stat_index++));
           }
           break;
 
-        case touch_state::TOUCH2:
+        case touch_states::TOUCH2:
           break;
 
-        case touch_state::TOUCH3:
+        case touch_states::TOUCH3:
           break;
 
-        case touch_state::PRESS:
+        case touch_states::PRESS:
           if (power_state == 0) {
-            matrix.set_state(matrix_state::BLACK);
+            matrix.set_state(matrix_states::BLACK);
             //matrix.display();
-            //matrix.set_state(matrix_state::BLACK);
+            //matrix.set_state(matrix_states::BLACK);
           } else {
-            matrix.set_state(matrix_state::PRIDE);
+            matrix.set_state(matrix_states::PRIDE);
             //matrix.display();
-            //matrix.set_state(matrix_state::PRIDE);
+            //matrix.set_state(matrix_states::PRIDE);
           }
             
           power_state = !power_state;

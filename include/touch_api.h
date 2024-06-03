@@ -8,7 +8,7 @@
 #define DEBOUNCE_TIME   65
 
 
-enum class touch_state {
+enum class touch_states {
 
     IDLE,
     TOUCH1,
@@ -20,11 +20,18 @@ enum class touch_state {
 };
 
 
-class touch_interface {
+struct touch_config {
+
+};
+
+
+
+class touch_api {
 
 private:
 
-    static touch_state state;
+    static touch_states  state;
+    static touch_config config;
 
     Button2 button;
 
@@ -33,33 +40,33 @@ private:
 
     static void touch1_handler(Button2 &btn) {
         Serial.println("> 1 touch");
-        state = touch_state::TOUCH1;
+        state = touch_states::TOUCH1;
     }
 
     static void touch2_handler(Button2 &btn) {
         Serial.println("> 2 touch");
-        state = touch_state::TOUCH2;
+        state = touch_states::TOUCH2;
     }
 
     static void touch3_handler(Button2 &btn) {
         Serial.println("> 3 touch");
-        state = touch_state::TOUCH3;
+        state = touch_states::TOUCH3;
     }
 
     static void press_handler(Button2 &btn) {
         Serial.println("> press");
-        state = touch_state::PRESS;
+        state = touch_states::PRESS;
     }
 
     static void hold_handler(Button2 &btn) {
         Serial.println("> hold");
-        state = touch_state::HOLD;
+        state = touch_states::HOLD;
     }
 
 public:
     
-    touch_interface();
-    ~touch_interface();
+    touch_api();
+    ~touch_api();
 
-    touch_state get_state();
+    touch_states get_state();
 };

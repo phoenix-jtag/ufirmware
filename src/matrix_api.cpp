@@ -1,8 +1,8 @@
-#include "matrix_interface.h"
+#include "matrix_api.h"
 
 CRGB leds[NUM_LEDS];
 
-matrix_interface::matrix_interface() {
+matrix_api::matrix_api() {
 
   FastLED
       .addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
@@ -11,47 +11,47 @@ matrix_interface::matrix_interface() {
     // set master brightness control
   FastLED.setBrightness(BRIGHTNESS);
 
-  state = matrix_state::BLACK;
+  state = matrix_states::BLACK;
 }
 
 
 
-matrix_interface::~matrix_interface() {
+matrix_api::~matrix_api() {
   // SAVE CONFIG STRUCT to EEPROM_CONFIG
 }
 
 
 
-void matrix_interface::set_state(matrix_state state) {
+void matrix_api::set_state(matrix_states state) {
   this->state = state;
 }
 
 
 
-matrix_state matrix_interface::get_state() {
+matrix_states matrix_api::get_state() {
   return state;
 }
 
 
 
 // MATRIC CONFIG - METHODS FOR CONFIG STRUCT -------------------------
-void matrix_interface::display() {
+void matrix_api::display() {
 
   switch (state) {
 
     // static
-    case matrix_state::BLACK:   fill_solid(leds, NUM_LEDS, CRGB::Black);   FastLED.show(); break;
-    case matrix_state::RED:     fill_solid(leds, NUM_LEDS, CRGB::Red);     FastLED.show(); break;
-    case matrix_state::GREEN:   fill_solid(leds, NUM_LEDS, CRGB::Green);   FastLED.show(); break;
-    case matrix_state::BLUE:    fill_solid(leds, NUM_LEDS, CRGB::Blue);    FastLED.show(); break;
-    case matrix_state::YELLOW:  fill_solid(leds, NUM_LEDS, CRGB::Yellow);  FastLED.show(); break;
-    case matrix_state::CYAN:    fill_solid(leds, NUM_LEDS, CRGB::Cyan);    FastLED.show(); break;
-    case matrix_state::MAGENTA: fill_solid(leds, NUM_LEDS, CRGB::Magenta); FastLED.show(); break;
+    case matrix_states::BLACK:   fill_solid(leds, NUM_LEDS, CRGB::Black);   FastLED.show(); break;
+    case matrix_states::RED:     fill_solid(leds, NUM_LEDS, CRGB::Red);     FastLED.show(); break;
+    case matrix_states::GREEN:   fill_solid(leds, NUM_LEDS, CRGB::Green);   FastLED.show(); break;
+    case matrix_states::BLUE:    fill_solid(leds, NUM_LEDS, CRGB::Blue);    FastLED.show(); break;
+    case matrix_states::YELLOW:  fill_solid(leds, NUM_LEDS, CRGB::Yellow);  FastLED.show(); break;
+    case matrix_states::CYAN:    fill_solid(leds, NUM_LEDS, CRGB::Cyan);    FastLED.show(); break;
+    case matrix_states::MAGENTA: fill_solid(leds, NUM_LEDS, CRGB::Magenta); FastLED.show(); break;
 
     // animated
-    case matrix_state::PRIDE: pride(); break;
-    case matrix_state::LIGHT_RING_RISSING: animate_light_rings(1, CRGB::Cyan); break;
-    case matrix_state::LIGHT_RING_FALLING: animate_light_rings(0, CRGB::Cyan); break;
+    case matrix_states::PRIDE: pride(); break;
+    case matrix_states::LIGHT_RING_RISSING: animate_light_rings(1, CRGB::Cyan); break;
+    case matrix_states::LIGHT_RING_FALLING: animate_light_rings(0, CRGB::Cyan); break;
 
     default: break;
   }
@@ -59,7 +59,7 @@ void matrix_interface::display() {
 
 
 // SYSTEM - METHODS FOR MATRIX STATE ---------------------------------
-void matrix_interface::animate_light_rings(bool uprising, CRGB color) {
+void matrix_api::animate_light_rings(bool uprising, CRGB color) {
 
     static uint8_t current_row = 0;
     static unsigned long last_update_time = 0;
@@ -85,7 +85,7 @@ void matrix_interface::animate_light_rings(bool uprising, CRGB color) {
 }
 
 
-void matrix_interface::animate_light_lines(bool clockwise, CRGB color) {
+void matrix_api::animate_light_lines(bool clockwise, CRGB color) {
 
     static uint8_t current_col = 0;
     static unsigned long last_update_time = 0;
@@ -112,7 +112,7 @@ void matrix_interface::animate_light_lines(bool clockwise, CRGB color) {
 
 
 
-void matrix_interface::set_row(uint8_t row, CRGB color) {
+void matrix_api::set_row(uint8_t row, CRGB color) {
 
     // Assuming NUM_ROWS is the total number of rows in your matrix
     if (row < NUM_ROWS) {
@@ -131,7 +131,7 @@ void matrix_interface::set_row(uint8_t row, CRGB color) {
 } 
 
 
-void matrix_interface::set_col(uint8_t col, CRGB color) {
+void matrix_api::set_col(uint8_t col, CRGB color) {
 
     // Assuming NUM_COLS is the total number of columns in your matrix
     if (col < NUM_COLS) {
@@ -157,7 +157,7 @@ void matrix_interface::set_col(uint8_t col, CRGB color) {
 
 // This function draws rainbows with an ever-changing,
 // widely-varying set of parameters.
-void matrix_interface::pride() 
+void matrix_api::pride() 
 {
   static uint16_t sPseudotime = 0;
   static uint16_t sLastMillis = 0;

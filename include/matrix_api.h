@@ -17,7 +17,7 @@ FASTLED_USING_NAMESPACE
 extern CRGB leds[NUM_LEDS];
 
 
-enum class matrix_state {
+enum class matrix_states {
 
   // static
   BLACK,
@@ -41,20 +41,20 @@ struct matrix_config {
 };
 
 
-class matrix_interface {
+class matrix_api {
 
 private:
 
-    matrix_state  state;
+    matrix_states  state;
     matrix_config config;
 
 public:
 
-    matrix_interface();
-    ~matrix_interface();
+    matrix_api();
+    ~matrix_api();
 
-    void         set_state(matrix_state state);
-    matrix_state get_state();
+    void         set_state(matrix_states state);
+    matrix_states get_state();
 
     void display();
 

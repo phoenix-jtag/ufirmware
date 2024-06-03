@@ -1,9 +1,9 @@
 #include <Arduino.h>
-#include "touch_interface.h"
+#include "touch_api.h"
 
 
 
-touch_state touch_interface::state;
+touch_states touch_api::state;
 
 uint8_t  touch_threshold;
 uint8_t  debounce_time;
@@ -14,7 +14,7 @@ byte button_state;
 
 
 
-void touch_interface::got_touch_event(){
+void touch_api::got_touch_event(){
 
   if (last_touch_active != testing_lower) {
 
@@ -27,13 +27,13 @@ void touch_interface::got_touch_event(){
 
 
 
-byte touch_interface::cap_state_handler() {
+byte touch_api::cap_state_handler() {
     return button_state;
 }
 
 
 
-touch_interface::touch_interface() {
+touch_api::touch_api() {
 
   touch_threshold    = TOUCH_THRESHOLD;   
   debounce_time      = DEBOUNCE_TIME; 
@@ -59,19 +59,20 @@ touch_interface::touch_interface() {
     button.begin(BTN_VIRTUAL_PIN);
 }
 
-touch_interface::~touch_interface() {
+touch_api::~touch_api() {
+  
   touchDetachInterrupt(TOUCH_PIN);
 }
 
 
 
-touch_state touch_interface::get_state() {
+touch_states touch_api::get_state() {
 
   #ifdef DEBUG
     Serial.println("Capacity: " + String(touchRead(TOUCH_PIN)));
   #endif
 
-  state = touch_state::IDLE;
+  state = touch_states::IDLE;
 
   button.loop();
 
