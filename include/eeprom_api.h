@@ -2,6 +2,8 @@
 
 #include <EEPROM.h>
 
+//#define DEBUG 1
+
 #define EEPROM_ADDR  0
 #define EEPROM_SIZE  1024
 
@@ -27,8 +29,6 @@ enum class pages_list {
 enum class eeprom_states {
 
     IS_INITED,
-    IS_CUSTOM,
-    IS_DEFAULT,
     FAIL_INIT,
     FAIL_SET,
     FAIL_GET,
@@ -37,20 +37,27 @@ enum class eeprom_states {
 
 struct eeprom_config {
 
-    char      device_id[32];      // <- device id
+    bool    state;              // <- 0 - undef, 1 - default, 2 - custom
+    char    device_id[32];      // <- device id
 }; 
 
 
 class eeprom_api {
 
+private:
+    // singleton pattern
+    eeprom_api(){}
+
 public:
     // singleton pattern
     static eeprom_api& getInstance() {
         static eeprom_api instance; // Guaranteed to be destroyed.
-                                    // Instantiated on first use.
-        return instance;
+        return instance;            // Instantiated on first use.
     }
+    eeprom_api(eeprom_api const&) = delete;
+    void operator=(eeprom_api const&) = delete;
 
+    // eeprom objects
     eeprom_states eeprom_state;
     eeprom_config eeprom_conf;
 
@@ -63,14 +70,5 @@ public:
     bool get_page(pages_list page, size_t size, void* data); // <- EEPROM ---> RAM
     
     bool clr_page(pages_list page);                          // <- ERASE PAGE
-    bool clr_eeprom();  
-    
-
-    // Singleton pattern
-private: 
-    eeprom_api(){}
-    
-public:
-    eeprom_api(eeprom_api const&) = delete;
-    void operator=(eeprom_api const&) = delete;
+    bool clr_eeprom();                                       // <- ERASE ALL EEPROM
 };

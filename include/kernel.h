@@ -20,6 +20,7 @@ enum class kernel_states {
 
 struct kernel_config {
 
+    bool is_default;
 };
 
 

@@ -8,8 +8,6 @@
 
 // STATES DEFINITIONS
 #define IS_INITED   eeprom_states::IS_INITED
-#define IS_CUSTOM   eeprom_states::IS_CUSTOM
-#define IS_DEFAULT  eeprom_states::IS_DEFAULT
 #define FAIL_INIT   eeprom_states::FAIL_INIT
 #define FAIL_SET    eeprom_states::FAIL_SET
 #define FAIL_GET    eeprom_states::FAIL_GET
@@ -28,33 +26,44 @@ eeprom_api::eeprom_api() {
         if (get_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf)) {
                 
                 // SUCCESS READING
-                if (eeprom_conf.device_id[0] == '\0') {
-                    
-                    // DEFAULT CONFIG
+                if (!eeprom_conf.state) { // EMPTY CONFIG
+
+                    // APPLY DEFAULT CONFIG
+                    eeprom_conf.state = 1;
+
                     strcpy(eeprom_conf.device_id, "default_id");
 
-                    set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf) ? eeprom_state = IS_DEFAULT : eeprom_state = FAIL_SET;
+                    // SAVE SERVICE PAGE
+                    if (!set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf)) { 
 
-                    Serial.println("> device_id: " + String(eeprom_conf.device_id));
-    
-                } else { 
+                        eeprom_state = FAIL_SET;
 
-                    // CUSTOM CONFIG
-                    eeprom_state = IS_CUSTOM;
-                    Serial.println("> device_id: " + String(eeprom_conf.device_id));
+                        #ifdef DEBUG 
+                            Serial.println("> eeprom: fail_set");
+                        #endif 
+                    }
                 }
+
+                #ifdef DEBUG 
+                    Serial.println("> device_id: " + String(eeprom_conf.device_id));
+                #endif
     
             } else { 
     
                 // FAILURE READING
                 eeprom_state = FAIL_GET;
-                Serial.println("> eeprom: fail_get");
+
+                #ifdef DEBUG 
+                    Serial.println("> eeprom: fail_get");
+                #endif 
         }
 
     } else { 
         
         // EEPROM IS NOT AVAILABLE
-        Serial.println("> eeprom: fail_init"); 
+        #ifdef DEBUG
+            Serial.println("> eeprom: fail_init"); 
+        #endif
     }
 
 };

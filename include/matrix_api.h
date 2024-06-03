@@ -37,6 +37,7 @@ enum class matrix_states {
 
 struct matrix_config {
 
+  bool is_default;
   uint8_t brightness;
 };
 

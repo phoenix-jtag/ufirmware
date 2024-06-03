@@ -24,11 +24,10 @@ enum class touch_states {
 
 struct touch_config {
 
-    uint8_t 
-    uint8_t touch_threshold;
-    uint8_t debounce_time;
+    bool        state;
+    uint8_t     touch_threshold;
+    uint8_t     debounce_time;
 };
-
 
 
 class touch_api {
