@@ -1,116 +1,164 @@
 #include "kernel.h"
 
+// STRUCT DEFINITIONS
+kernel_states kernel::kernel_state;
+kernel_config kernel::kernel_conf;
+
 
 kernel::kernel() {
 
-  kernel_state = kernel_states::NO_INITED;
+	eeprom_api& eeprom 	= eeprom_api::getInstance();
 
-    touch_queue = xQueueCreate(10, sizeof(touch_states));
+	// GET DINAMIC CONFIGURATION
+	eeprom.get_page(pages_list::KERNEL, sizeof(kernel_conf), &kernel_conf);
+
+	// CHK DINAMIC CONFIGURATION
+	if (kernel_conf.state != MAGIC) { // VALIDATION FAILED
+
+		// APPLY DEFAULT CONFIG
+		kernel_conf.state = MAGIC;
+
+		// SAVE DEFAULT CONFIG
+		eeprom.set_page(pages_list::KERNEL, sizeof(kernel_conf), &kernel_conf);
+	}
+
+	// SET STATIC CONFIGURATION
+	// INIT FUNCTIONALITY
 }
 
 
 kernel::~kernel() {
-    vQueueDelete(touch_queue);
+
+	eeprom_api& eeprom 	= eeprom_api::getInstance();
+			
+	// SAVE CONFIG STRUCT to EEPROM_CONFIG
+	eeprom.set_page(pages_list::KERNEL, sizeof(kernel_conf), &kernel_conf);
 }
 
 
+void kernel::start() {
 
-
-
-void kernel::tasks_start() {
-    xTaskCreate((TaskFunction_t)&kernel::uart_task, "uart_task", 4096, NULL, 1, NULL);
-    xTaskCreate((TaskFunction_t)&kernel::touch_task, "touch_task", 4096, NULL, 1, NULL);
-    xTaskCreate((TaskFunction_t)&kernel::matrix_task, "matrix_task", 4096, NULL, 1, NULL);
+	// CREATE TASKS
+	xTaskCreate(kernel::uart_task, "uart_task", 2048, this, 1, NULL);
+	//xTaskCreate(kernel::touch_task, "touch_task", 2048, this, 1, NULL);
+	xTaskCreate(kernel::matrix_task, "matrix_task", 2048, this, 1, NULL);
 }
-
 
 
 
 void kernel::uart_task(void *pvParameters) {
 
-  String command = "";
+	kernel* instance = static_cast<kernel*>(pvParameters);
+	eeprom_api& eeprom 	= eeprom_api::getInstance();
+	touch_api&  touch	= touch_api ::getInstance();
+	matrix_api& matrix	= matrix_api::getInstance();
 
-  for (;;) {
+	String command = "";
 
-    while (Serial.available() > 0) {
+	for (;;) {
 
-      char cmd = Serial.read();
+		while (Serial.available() > 0) {
 
-      switch(cmd) {
-        case '1': Serial.println("> touch_cal: touch sensor"); break;
+			char cmd = Serial.read();
 
-        default: Serial.println("> unknown cmd "); break;
-      }
+			switch(cmd) {
+				case '1': 
+				if (touch.touch_calibration()) {
+					Serial.println("> touch calibration saving - success");
+				} else {
+					Serial.println("> touch calibration saving - failed");
+				}
+				
+				
+				break;
 
-    } // <- eof while
-  } // <- eof main loop
+				default:  Serial.println("> unknown cmd "); break;
+			}
+
+		} // <- eof while
+	} // <- eof main loop
 } // <- eof uart_task
 
 
 
 void kernel::touch_task(void *pvParameters) {
 
-  for (;;) { // <- main loop
+	kernel* instance = static_cast<kernel*>(pvParameters);
+	eeprom_api& eeprom 	= eeprom_api::getInstance();
+	touch_api&  touch	= touch_api ::getInstance();
+	matrix_api& matrix	= matrix_api::getInstance();
 
-    // get touch state from touch interface
-    state = touch.get_state();
+	// definitions and declarations
 
-    // send touch state to matrix interface
-    xQueueSend(touch_queue, &state, portMAX_DELAY);
+	for (;;) { // <- main loop
 
-    taskYIELD(); // <- yield 
-    
-  } // <- eof main loop
+		// get touch state from touch interface
+		//touch_state = touch.get_state();
+
+		// send touch state to matrix interface
+		//xQueueSend(touch_queue, &touch_state, portMAX_DELAY);
+
+		taskYIELD(); // <- yield 
+		
+	} // <- eof main loop
 }; // <- eof touch_task
 
 
 
 void kernel::matrix_task(void *pvParameters) {
 
-  for (;;) { // <- main loop
+	kernel* instance = static_cast<kernel*>(pvParameters);
+	eeprom_api& eeprom 	= eeprom_api::getInstance();
+	touch_api&  touch	= touch_api ::getInstance();
+	matrix_api& matrix	= matrix_api::getInstance();
 
-    // reveive touch state from touch_task
-    if (xQueueReceive(touch_queue, &state, portMAX_DELAY)) {
+	// definitions and declarations
+	touch_states touch_state = touch_states::IDLE;
+	matrix_states matrix_state = matrix_states::BLACK;
+	uint8_t power_state = 0;
 
-      // where we will recive signals from different channels
-      // and they will define the state of the matrix
-      switch (state) { 
+	for (;;) { // <- MAIN LOOP
 
-        case touch_states::TOUCH1:
-          if (power_state) { // only
-            matrix.set_state(static_cast<matrix_states>(stat_index++));
-          }
-          break;
+		// get touch state from touch api
+		touch_state = touch.get_state();
 
-        case touch_states::TOUCH2:
-          break;
+		// handle touch state
+		if (touch_state != touch_states::IDLE) {
 
-        case touch_states::TOUCH3:
-          break;
+			// handle touch state
+			switch (touch_state) { 
 
-        case touch_states::PRESS:
-          if (power_state == 0) {
-            matrix.set_state(matrix_states::BLACK);
-            //matrix.display();
-            //matrix.set_state(matrix_states::BLACK);
-          } else {
-            matrix.set_state(matrix_states::PRIDE);
-            //matrix.display();
-            //matrix.set_state(matrix_states::PRIDE);
-          }
-            
-          power_state = !power_state;
-          break;
+				case touch_states::TOUCH1:
+					break;
 
-        default:
-          break;
+				case touch_states::TOUCH2:
+					break;
 
-      } // eof switch
-    } // eof touch state
+				case touch_states::TOUCH3:
+					break;
 
-    matrix.display(); // <- display matrix state
+				case touch_states::PRESS:
+					power_state = !power_state;
+					if (power_state == 0) {
+						matrix.set_state(matrix_states::BLACK);
+						//matrix.display();
+						//matrix.set_state(matrix_states::BLACK);
+					} else {
+						matrix.set_state(matrix_states::PRIDE);
+						//matrix.display();
+						//matrix.set_state(matrix_states::PRIDE);
+					}
+					break;
 
-    taskYIELD(); // <- yield task
+				default:
+					break;
 
-  } // <- eof main loop
+			} // eof switch
+		} // eof touch state
+
+		matrix.display(); // <- display matrix state
+
+		taskYIELD(); // <- yield task
+
+	} // <- eof main loop
 }; // <- eof matrix_task

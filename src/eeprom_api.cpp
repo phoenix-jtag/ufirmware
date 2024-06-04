@@ -1,138 +1,122 @@
 #include "eeprom_api.h"
 
-
 // PAGES DEFINITIONS
 #define SERVICE     pages_list::SERVICE
 #define TOUCH       pages_list::TOUCH
 #define MATRIX      pages_list::MATRIX
 
 // STATES DEFINITIONS
-#define IS_INITED   eeprom_states::IS_INITED
-#define FAIL_INIT   eeprom_states::FAIL_INIT
-#define FAIL_SET    eeprom_states::FAIL_SET
-#define FAIL_GET    eeprom_states::FAIL_GET
+#define FAILURE   	eeprom_states::FAILURE
+#define INITED   	eeprom_states::INITED
+
+// STATIC VARIABLES
+eeprom_states eeprom_api::eeprom_state;
+eeprom_config eeprom_api::eeprom_conf;
 
 
-
-// <- init memory, load default or custom config
 eeprom_api::eeprom_api() {
 
-    // EEPROM INITIALIZATION
-    EEPROM.begin(EEPROM_SIZE) ? eeprom_state = IS_INITED : eeprom_state = FAIL_INIT;
- 
-    if (eeprom_state == IS_INITED) { // EEPROM IS AVAILABLE
+	// EEPROM INITIALIZATION
+	EEPROM.begin(EEPROM_SIZE) ? eeprom_state = INITED : eeprom_state = FAILURE;
 
-        // READ SERVICE PAGE
-        if (get_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf)) {
-                
-                // SUCCESS READING
-                if (!eeprom_conf.state) { // EMPTY CONFIG
+	if (eeprom_state == FAILURE) { Serial.println("> eeprom: failure"); } // <- check eeprom state
 
-                    // APPLY DEFAULT CONFIG
-                    eeprom_conf.state = 1;
+	// GET DINAMIC CONFIGURATION
+	get_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf);
+				
+	// CHK DINAMIC CONFIGURATION			
+	if (eeprom_conf.state != MAGIC) { // VALIDATION FAILED
 
-                    strcpy(eeprom_conf.device_id, "default_id");
+		// APPLY DEFAULT CONFIG
+		eeprom_conf.state = MAGIC;
+		strcpy(eeprom_conf.device_id, "default_id");
 
-                    // SAVE SERVICE PAGE
-                    if (!set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf)) { 
+		// SAVE DEFAULT CONFIG
+		set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf);
 
-                        eeprom_state = FAIL_SET;
+	} // <- eeprom_conf.state != MAGIC
 
-                        #ifdef DEBUG 
-                            Serial.println("> eeprom: fail_set");
-                        #endif 
-                    }
-                }
 
-                #ifdef DEBUG 
-                    Serial.println("> device_id: " + String(eeprom_conf.device_id));
-                #endif
-    
-            } else { 
-    
-                // FAILURE READING
-                eeprom_state = FAIL_GET;
+	Serial.println("> device_id: " + String(eeprom_conf.device_id));
 
-                #ifdef DEBUG 
-                    Serial.println("> eeprom: fail_get");
-                #endif 
-        }
-
-    } else { 
-        
-        // EEPROM IS NOT AVAILABLE
-        #ifdef DEBUG
-            Serial.println("> eeprom: fail_init"); 
-        #endif
-    }
-
-};
+	#ifdef DEBUG
+		if (eeprom_state == FAILURE) {
+			Serial.println("> eeprom: general failure");
+			while(1) { };
+		}
+	#endif
+}; // <- eeprom_api ctor
 
 
 
 eeprom_api::~eeprom_api() {
 
-    // SAVE SERVICE PAGE
-    set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf);
-    EEPROM.end(); 
+	// SAVE SERVICE PAGE
+	set_page(SERVICE, sizeof(eeprom_conf), &eeprom_conf);
+	EEPROM.end(); 
 }
 
 
 
 bool eeprom_api::set_page(pages_list page, size_t size, void* data) {
 
-    if (size > EEPROM_PAGE_SIZE)   { return false; } // <- check size (max 256 bytes
-    if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
-    if (data == nullptr)           { return false; } // <- check data (not null
+	if (eeprom_state == FAILURE)   { return false; } // <- check eeprom state
+	if (size > EEPROM_PAGE_SIZE)   { return false; } // <- check size (max 256 bytes
+	if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
+	if (data == nullptr)           { return false; } // <- check data (not null
 
-    int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
-    const uint8_t* data_ptr = static_cast<const uint8_t*>(data);
+	int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
+	const uint8_t* data_ptr = static_cast<const uint8_t*>(data);
 
-    for (size_t i = 0; i < size; ++i) {
+	for (size_t i = 0; i < size; ++i) {
 
-        EEPROM.write(start_address + i, data_ptr[i]);
-    }
+		EEPROM.write(start_address + i, data_ptr[i]);
+	}
 
-    return EEPROM.commit();
+	return EEPROM.commit();
 }
 
 
 
 bool eeprom_api::get_page(pages_list page, size_t size, void* data) {
 
-    if (size > EEPROM_PAGE_SIZE)   { return false; } // <- check size (max 256 bytes
-    if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
-    if (data == nullptr)           { return false; } // <- check data (not null
+	if (eeprom_state == FAILURE)   { return false; } // <- check eeprom state
+	if (size > EEPROM_PAGE_SIZE)   { return false; } // <- check size (max 256 bytes
+	if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
+	if (data == nullptr)           { return false; } // <- check data (not null
 
-    int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
-    uint8_t* data_ptr = static_cast<uint8_t*>(data);
+	int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
+	uint8_t* data_ptr = static_cast<uint8_t*>(data);
 
-    for (size_t i = 0; i < size; ++i) {
+	for (size_t i = 0; i < size; ++i) {
 
-        data_ptr[i] = EEPROM.read(start_address + i);
-    }
+		data_ptr[i] = EEPROM.read(start_address + i);
+	}
 
-    return true;
+	return true;
 }
 
 
 
 bool eeprom_api::clr_page(pages_list page) {
 
-    if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
+	if (eeprom_state == FAILURE)   { return false; } // <- check eeprom state
+	if (page >= pages_list::SCOPE) { return false; } // <- check page (max 4 pages)
 
-    int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
+	int start_address = static_cast<int>(page) * EEPROM_PAGE_SIZE;
 
-    for (int i = 0; i < EEPROM_PAGE_SIZE; i++) { EEPROM.put(start_address + i, '\0'); }
+	for (int i = 0; i < EEPROM_PAGE_SIZE; i++) { EEPROM.put(start_address + i, '\0'); }
 
-    return EEPROM.commit();
+	return EEPROM.commit();
 }
 
 
 
 bool eeprom_api::clr_eeprom() {
 
-    for (int i = 0; i < EEPROM_SIZE; i++) { EEPROM.put(i, '\0'); }
+	if (eeprom_state == FAILURE) { return false; } // <- check eeprom state
 
-    return EEPROM.commit();
+	for (int i = 0; i < EEPROM_SIZE; i++) { EEPROM.put(i, '\0'); }
+
+	return EEPROM.commit();
 }
