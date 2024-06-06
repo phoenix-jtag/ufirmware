@@ -12,6 +12,9 @@
 
 enum class touch_states {
 
+	FAILURE,
+	INITED,
+
 	IDLE,
 	TOUCH1,
 	TOUCH2,
@@ -36,6 +39,7 @@ private:
 	// instances
 	eeprom_api& eeprom = eeprom_api::getInstance();
 
+	// touch objects
 	static touch_states touch_state;
 	static touch_config touch_conf;
 
@@ -82,6 +86,7 @@ public:
     void operator=(touch_api const&) = delete; // Deleting the assignment operator
 
 
+	// class methods
 	touch_states get_state();
 
 	bool touch_calibration();

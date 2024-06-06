@@ -11,10 +11,10 @@
 
 enum class kernel_states {
 
-	NO_INITED,  // ram structures != eeprom structures
-	IS_INITED,  // ram structures == eeprom structures
-	EXECUTION,  // kernel is running, all tasks are active
-	FAILURE,    // kernel is in failure state
+	FAILURE,
+	INITED,
+	
+	EXECUTION,
 };
 
 
@@ -48,15 +48,8 @@ public:
     kernel(kernel const&) = delete; // Deleting the copy constructor
     void operator=(kernel const&) = delete; // Deleting the assignment operator
 
-	
 
-	//bool init();
-	//bool kill();
-
+	// class methods
 	void start();
-	//void tasks_stop();
-	//void tasks_monitor();
-
-	
 
 }; // <- eof task_manager

@@ -50,6 +50,8 @@ touch_api::touch_api() {
 
 	// display touch configuration
 	Serial.println("> touch: L[" + String(touch_conf.threshold_lvl) + "] T[" + String(touch_conf.debounce_time) + "]");
+
+	touch_state = touch_states::INITED;
 }
 
 

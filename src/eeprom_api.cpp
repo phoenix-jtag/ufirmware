@@ -38,13 +38,6 @@ eeprom_api::eeprom_api() {
 
 
 	Serial.println("> device_id: " + String(eeprom_conf.device_id));
-
-	#ifdef DEBUG
-		if (eeprom_state == FAILURE) {
-			Serial.println("> eeprom: general failure");
-			while(1) { };
-		}
-	#endif
 }; // <- eeprom_api ctor
 
 

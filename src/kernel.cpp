@@ -22,8 +22,7 @@ kernel::kernel() {
 		eeprom.set_page(pages_list::KERNEL, sizeof(kernel_conf), &kernel_conf);
 	}
 
-	// SET STATIC CONFIGURATION
-	// INIT FUNCTIONALITY
+	kernel_state = kernel_states::INITED;
 }
 
 
@@ -42,16 +41,18 @@ void kernel::start() {
 	xTaskCreate(kernel::uart_task, "uart_task", 2048, this, 1, NULL);
 	//xTaskCreate(kernel::touch_task, "touch_task", 2048, this, 1, NULL);
 	xTaskCreate(kernel::matrix_task, "matrix_task", 2048, this, 1, NULL);
+
+	kernel_state = kernel_states::EXECUTION;
 }
 
 
 
 void kernel::uart_task(void *pvParameters) {
 
-	kernel* instance = static_cast<kernel*>(pvParameters);
-	eeprom_api& eeprom 	= eeprom_api::getInstance();
+	//kernel* instance = static_cast<kernel*>(pvParameters);
+	//eeprom_api& eeprom 	= eeprom_api::getInstance();
 	touch_api&  touch	= touch_api ::getInstance();
-	matrix_api& matrix	= matrix_api::getInstance();
+	//matrix_api& matrix	= matrix_api::getInstance();
 
 	String command = "";
 
@@ -83,10 +84,10 @@ void kernel::uart_task(void *pvParameters) {
 
 void kernel::touch_task(void *pvParameters) {
 
-	kernel* instance = static_cast<kernel*>(pvParameters);
-	eeprom_api& eeprom 	= eeprom_api::getInstance();
-	touch_api&  touch	= touch_api ::getInstance();
-	matrix_api& matrix	= matrix_api::getInstance();
+	//kernel* instance = static_cast<kernel*>(pvParameters);
+	//eeprom_api& eeprom 	= eeprom_api::getInstance();
+	//touch_api&  touch	= touch_api ::getInstance();
+	//matrix_api& matrix	= matrix_api::getInstance();
 
 	// definitions and declarations
 
@@ -107,13 +108,13 @@ void kernel::touch_task(void *pvParameters) {
 
 void kernel::matrix_task(void *pvParameters) {
 
-	kernel* instance = static_cast<kernel*>(pvParameters);
-	eeprom_api& eeprom 	= eeprom_api::getInstance();
+	//kernel* instance = static_cast<kernel*>(pvParameters);
+	//eeprom_api& eeprom 	= eeprom_api::getInstance();
 	touch_api&  touch	= touch_api ::getInstance();
 	matrix_api& matrix	= matrix_api::getInstance();
 
 	// definitions and declarations
-	touch_states touch_state = touch_states::IDLE;
+	touch_states  touch_state  = touch_states::IDLE;
 	matrix_states matrix_state = matrix_states::BLACK;
 	uint8_t power_state = 0;
 
@@ -141,12 +142,8 @@ void kernel::matrix_task(void *pvParameters) {
 					power_state = !power_state;
 					if (power_state == 0) {
 						matrix.set_state(matrix_states::BLACK);
-						//matrix.display();
-						//matrix.set_state(matrix_states::BLACK);
 					} else {
 						matrix.set_state(matrix_states::PRIDE);
-						//matrix.display();
-						//matrix.set_state(matrix_states::PRIDE);
 					}
 					break;
 

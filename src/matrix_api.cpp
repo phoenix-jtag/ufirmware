@@ -6,6 +6,7 @@ matrix_config matrix_api::matrix_conf;
 
 CRGB leds[NUM_LEDS];
 
+
 matrix_api::matrix_api() {
 
 	// GET DINAMIC CONFIGURATION
@@ -16,8 +17,8 @@ matrix_api::matrix_api() {
 
 		// APPLY DEFAULT CONFIG
 		matrix_conf.state		= MAGIC;
-		matrix_conf.brightness 	= DEFAULT_BRIGHTNESS;
 		matrix_conf.fps_rate	= DEFAULT_FPS_RATE;
+		matrix_conf.brightness 	= DEFAULT_BRIGHTNESS;
 
 		// SAVE DEFAULT CONFIG
 		eeprom.set_page(pages_list::MATRIX, sizeof(matrix_conf), &matrix_conf);
@@ -33,6 +34,8 @@ matrix_api::matrix_api() {
 		
 	// set master brightness control
 	FastLED.setBrightness(matrix_conf.brightness);
+
+	matrix_state = matrix_states::INITED;
 }
 
 
@@ -45,7 +48,7 @@ matrix_api::~matrix_api() {
 
 void matrix_api::set_state(matrix_states state) {
 
-	this->matrix_state = state;
+	matrix_state = state;
 }
 
 
@@ -73,8 +76,10 @@ void matrix_api::display() {
 
 		// animated
 		case matrix_states::PRIDE: pride(); break;
-		case matrix_states::LIGHT_RING_RISSING: animate_light_rings(1, CRGB::Cyan); break;
-		case matrix_states::LIGHT_RING_FALLING: animate_light_rings(0, CRGB::Cyan); break;
+		case matrix_states::LIGHT_RING_RISSING: animate_light_rings(1, CRGB::Cyan, 24); break;
+		case matrix_states::LIGHT_RING_FALLING: animate_light_rings(0, CRGB::Cyan, 24); break;
+
+		case matrix_states::POWER_ON: animate_light_rings_with_acceleration(1, CRGB::Cyan, 2000 ); break;
 
 		default: break;
 	}
@@ -82,55 +87,97 @@ void matrix_api::display() {
 
 
 // SYSTEM - METHODS FOR MATRIX STATE ---------------------------------
-void matrix_api::animate_light_rings(bool uprising, CRGB color) {
+void matrix_api::animate_light_rings_with_acceleration(bool uprising, CRGB color, unsigned long duration_ms) {
+    
+	static unsigned long start_time = millis();
+    unsigned long elapsed_time = millis() - start_time;
 
-		static uint8_t current_row = 0;
-		static unsigned long last_update_time = 0;
+    if (elapsed_time < duration_ms) {
+        // Calculate the current frame rate based on the elapsed time
+        int fps = map(elapsed_time, 0, duration_ms, 0, 60);
 
-		// Map the speed level to a delay time
-		int delay_time = 10;
-
-		if (millis() - last_update_time >= delay_time) {
-
-				set_row(current_row, CRGB::Black);												// Turn off the previous row
-				
-				if (uprising) {
-						current_row = (current_row + 1) % NUM_ROWS;							 	// Move to the next row
-				} else {
-						current_row = (current_row == 0) ? NUM_ROWS - 1 : current_row - 1; 		// Move to the previous row
-				}
-													// Move to the next row
-				set_row(current_row, color);																	// Turn on the current row
-
-				FastLED.show();
-				last_update_time = millis();																	// Update the last update time
-		}
+        // Animate the light rings with the current frame rate
+        animate_light_rings(uprising, color, fps);
+    } else {
+        // Reset the start time for the next cycle
+        start_time = millis();
+    }
 }
 
 
-void matrix_api::animate_light_lines(bool clockwise, CRGB color) {
 
-		static uint8_t current_col = 0;
-		static unsigned long last_update_time = 0;
+void matrix_api::animate_light_lines_with_acceleration(bool clockwise, CRGB color, unsigned long duration_ms) {
+    
+	static unsigned long start_time = millis();
+    unsigned long elapsed_time = millis() - start_time;
 
-		// Map the speed level to a delay time
-		int delay_time = 50;
+    if (elapsed_time < duration_ms) {
+        // Calculate the current frame rate based on the elapsed time
+        int fps = map(elapsed_time, 0, duration_ms, 0, 60);
 
-		if (millis() - last_update_time >= delay_time) {
+        // Animate the light lines with the current frame rate
+        animate_light_lines(clockwise, color, fps);
+    } else {
+        // Reset the start time for the next cycle
+        start_time = millis();
+    }
+}
 
-				set_col(current_col, CRGB::Black);														// Turn off the previous column
-				
-				if (clockwise) {
-						current_col = (current_col + 1) % NUM_COLS;							 // Move to the next column
-				} else {
-						current_col = (current_col == 0) ? NUM_COLS - 1 : current_col - 1; // Move to the previous column
-				}
-													// Move to the next column
-				set_col(current_col, color);																	// Turn on the current column
 
-				FastLED.show();
-				last_update_time = millis();																	// Update the last update time
-		}
+
+void matrix_api::animate_light_rings(bool uprising, CRGB color, int fps) {
+
+    static uint8_t 		 current_row = 0;
+    static unsigned long last_update_time = 0;
+
+    // Calculate delay time based on the desired frame rate
+    int frame_delay = 1000 / fps;
+
+    // Non-blocking delay check
+    unsigned long current_time = millis();
+
+    if (current_time - last_update_time >= frame_delay) {
+        set_row(current_row, CRGB::Black); // Turn off the previous row
+
+        if (uprising) {
+            current_row = (current_row + 1) % NUM_ROWS; // Move to the next row
+        } else {
+            current_row = (current_row == 0) ? NUM_ROWS - 1 : current_row - 1; // Move to the previous row
+        }
+
+        set_row(current_row, color); // Turn on the current row
+
+        FastLED.show();
+        last_update_time = current_time; // Update the last update time
+    }
+}
+
+
+
+void matrix_api::animate_light_lines(bool clockwise, CRGB color, int fps) {
+	
+    static uint8_t current_row = 0;
+    static unsigned long last_update_time = 0;
+
+    // Calculate delay time based on the desired frame rate
+    int frame_delay = 1000 / fps;
+
+    // Non-blocking delay check
+    unsigned long current_time = millis();
+    if (current_time - last_update_time >= frame_delay) {
+        set_row(current_row, CRGB::Black); // Turn off the previous row
+
+        if (clockwise) {
+            current_row = (current_row + 1) % NUM_ROWS; // Move to the next row
+        } else {
+            current_row = (current_row == 0) ? NUM_ROWS - 1 : current_row - 1; // Move to the previous row
+        }
+
+        set_row(current_row, color); // Turn on the current row
+
+        FastLED.show();
+        last_update_time = current_time; // Update the last update time
+    }
 }
 
 
