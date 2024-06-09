@@ -4,6 +4,9 @@
 kernel_states kernel::kernel_state;
 kernel_config kernel::kernel_conf;
 
+#define POWER_OFF matrix_states::POWER_OFF
+#define POWER_ON  matrix_states::POWER_ON
+
 
 kernel::kernel() {
 
@@ -49,10 +52,7 @@ void kernel::start() {
 
 void kernel::uart_task(void *pvParameters) {
 
-	//kernel* instance = static_cast<kernel*>(pvParameters);
-	//eeprom_api& eeprom 	= eeprom_api::getInstance();
 	touch_api&  touch	= touch_api ::getInstance();
-	//matrix_api& matrix	= matrix_api::getInstance();
 
 	String command = "";
 
@@ -115,8 +115,16 @@ void kernel::matrix_task(void *pvParameters) {
 
 	// definitions and declarations
 	touch_states  touch_state  = touch_states::IDLE;
-	matrix_states matrix_state = matrix_states::BLACK;
-	uint8_t power_state = 0;
+	matrix_states matrix_state = POWER_OFF;
+
+	TaskHandle_t prideTaskHandle = NULL;
+	TaskHandle_t blackTaskHandle = NULL;
+
+	
+	vTaskSuspend(prideTaskHandle);
+
+	xTaskCreate(matrix.black_task, "black_task", 2048, NULL, 1, &blackTaskHandle);
+	vTaskSuspend(blackTaskHandle);
 
 	for (;;) { // <- MAIN LOOP
 
@@ -139,21 +147,22 @@ void kernel::matrix_task(void *pvParameters) {
 					break;
 
 				case touch_states::PRESS:
-					power_state = !power_state;
-					if (power_state == 0) {
-						matrix.set_state(matrix_states::BLACK);
-					} else {
-						matrix.set_state(matrix_states::PRIDE);
-					}
-					break;
+    				if (matrix_state == POWER_OFF) {
+        				matrix_state = POWER_ON;
+						vTaskSuspend(blackTaskHandle);
+						vTaskResume(prideTaskHandle);
+    				} else {
+        				matrix_state = POWER_OFF;
+        				vTaskSuspend(prideTaskHandle);
+						vTaskResume(blackTaskHandle);
+    				}
+    				break;
 
 				default:
 					break;
 
 			} // eof switch
 		} // eof touch state
-
-		matrix.display(); // <- display matrix state
 
 		taskYIELD(); // <- yield task
 

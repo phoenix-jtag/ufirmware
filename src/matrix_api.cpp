@@ -24,9 +24,6 @@ matrix_api::matrix_api() {
 		eeprom.set_page(pages_list::MATRIX, sizeof(matrix_conf), &matrix_conf);
 	}
 
-	// SET STATIC CONFIGURATION
-	matrix_state = matrix_states::BLACK;
-
 	// INIT FUNCTIONALITY
 	FastLED
 			.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
@@ -36,91 +33,15 @@ matrix_api::matrix_api() {
 	FastLED.setBrightness(matrix_conf.brightness);
 
 	matrix_state = matrix_states::INITED;
+
+	// debug 
+	Serial.println("> matrix: B[" + String(matrix_conf.brightness) + "] F[" + String(matrix_conf.fps_rate) + "]");
 }
 
 
 
 matrix_api::~matrix_api() {
 	// SAVE CONFIG STRUCT to EEPROM_CONFIG
-}
-
-
-
-void matrix_api::set_state(matrix_states state) {
-
-	matrix_state = state;
-}
-
-
-
-matrix_states matrix_api::get_state() {
-
-	return matrix_state;
-}
-
-
-
-// MATRIC CONFIG - METHODS FOR CONFIG STRUCT -------------------------
-void matrix_api::display() {
-
-	switch (matrix_state) {
-
-		// static
-		case matrix_states::BLACK:		fill_solid(leds, NUM_LEDS, CRGB::Black);	FastLED.show(); break;
-		case matrix_states::RED:		fill_solid(leds, NUM_LEDS, CRGB::Red);		FastLED.show(); break;
-		case matrix_states::GREEN:		fill_solid(leds, NUM_LEDS, CRGB::Green);	FastLED.show(); break;
-		case matrix_states::BLUE:		fill_solid(leds, NUM_LEDS, CRGB::Blue);		FastLED.show(); break;
-		case matrix_states::YELLOW:		fill_solid(leds, NUM_LEDS, CRGB::Yellow);	FastLED.show(); break;
-		case matrix_states::CYAN:		fill_solid(leds, NUM_LEDS, CRGB::Cyan);		FastLED.show(); break;
-		case matrix_states::MAGENTA:	fill_solid(leds, NUM_LEDS, CRGB::Magenta); 	FastLED.show(); break;
-
-		// animated
-		case matrix_states::PRIDE: pride(); break;
-		case matrix_states::LIGHT_RING_RISSING: animate_light_rings(1, CRGB::Cyan, 24); break;
-		case matrix_states::LIGHT_RING_FALLING: animate_light_rings(0, CRGB::Cyan, 24); break;
-
-		case matrix_states::POWER_ON: animate_light_rings_with_acceleration(1, CRGB::Cyan, 2000 ); break;
-
-		default: break;
-	}
-}
-
-
-// SYSTEM - METHODS FOR MATRIX STATE ---------------------------------
-void matrix_api::animate_light_rings_with_acceleration(bool uprising, CRGB color, unsigned long duration_ms) {
-    
-	static unsigned long start_time = millis();
-    unsigned long elapsed_time = millis() - start_time;
-
-    if (elapsed_time < duration_ms) {
-        // Calculate the current frame rate based on the elapsed time
-        int fps = map(elapsed_time, 0, duration_ms, 0, 60);
-
-        // Animate the light rings with the current frame rate
-        animate_light_rings(uprising, color, fps);
-    } else {
-        // Reset the start time for the next cycle
-        start_time = millis();
-    }
-}
-
-
-
-void matrix_api::animate_light_lines_with_acceleration(bool clockwise, CRGB color, unsigned long duration_ms) {
-    
-	static unsigned long start_time = millis();
-    unsigned long elapsed_time = millis() - start_time;
-
-    if (elapsed_time < duration_ms) {
-        // Calculate the current frame rate based on the elapsed time
-        int fps = map(elapsed_time, 0, duration_ms, 0, 60);
-
-        // Animate the light lines with the current frame rate
-        animate_light_lines(clockwise, color, fps);
-    } else {
-        // Reset the start time for the next cycle
-        start_time = millis();
-    }
 }
 
 
@@ -153,7 +74,6 @@ void matrix_api::animate_light_rings(bool uprising, CRGB color, int fps) {
 }
 
 
-
 void matrix_api::animate_light_lines(bool clockwise, CRGB color, int fps) {
 	
     static uint8_t current_row = 0;
@@ -179,7 +99,6 @@ void matrix_api::animate_light_lines(bool clockwise, CRGB color, int fps) {
         last_update_time = current_time; // Update the last update time
     }
 }
-
 
 
 void matrix_api::set_row(uint8_t row, CRGB color) {
@@ -224,6 +143,35 @@ void matrix_api::set_col(uint8_t col, CRGB color) {
 
 
 // ANIMATION - METHODS FOR MATRIX STATE ------------------------------
+void matrix_api::black_task(void *pvParameters) {
+
+	// init 
+
+	// loop
+	for (;;) {
+		for (int i = 0; i < NUM_LEDS; i++) {
+			leds[i] = CRGB::Black;
+		}
+
+		FastLED.show();
+		vTaskDelay(1000 / matrix_conf.fps_rate);
+	}
+}
+
+
+
+void matrix_api::pride_task(void *pvParameters) {
+
+	// init 
+
+	// loop
+	for (;;) {
+		pride();
+		
+		FastLED.show();
+		vTaskDelay(1000 / matrix_conf.fps_rate);
+	}
+}
 
 // This function draws rainbows with an ever-changing,
 // widely-varying set of parameters.
@@ -266,5 +214,4 @@ void matrix_api::pride()
 		
 		nblend( leds[pixelnumber], newcolor, 64);
 	}
-	FastLED.show();
 }

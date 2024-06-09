@@ -23,8 +23,6 @@ struct kernel_config {
 	uint8_t     state;
 };
 
-
-
 class kernel { 
 
 private: 

@@ -22,22 +22,8 @@ enum class matrix_states {
 
 	FAILURE,
 	INITED,
-
-	// static
-	BLACK,
-	RED,
-	GREEN,
-	BLUE,
-	YELLOW,
-	CYAN,
-	MAGENTA,
-
-	// animated
-	PRIDE,
-	LIGHT_RING_RISSING,
-	LIGHT_RING_FALLING,
-
 	POWER_ON,
+	POWER_OFF,
 };
 
 
@@ -73,21 +59,20 @@ public:
 
 
 	// class methods
-	void			set_state(matrix_states state);
-	matrix_states 	get_state();
+	void			set_state(matrix_states state) 	{ matrix_state = state; }
+	matrix_states 	get_state() 					{ return matrix_state; }
 
-	void display();
+
+	static void black_task(void *pvParameters);
+
+	static void pride_task(void *pvParameters);
+	static void pride();
 
 	void set_all(CRGB color);
 	void set_row(uint8_t row, CRGB color);
 	void set_col(uint8_t col, CRGB color);
-		
-	void pride();
 
-	void animate_light_rings_with_acceleration(bool uprising, CRGB color, unsigned long duration_ms);
-	void animate_light_lines_with_acceleration(bool clockwise,	CRGB color, unsigned long duration_ms);
-
-	void animate_light_rings(bool uprising,	CRGB color, int fps); // 0 - falling, 1 - rising
+	void animate_light_rings(bool uprising,	 CRGB color, int fps); // 0 - falling, 1 - rising
 	void animate_light_lines(bool clockwise, CRGB color, int fps); // 0 - left,		1 - right
 
 };
